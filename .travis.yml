@@ -25,7 +25,9 @@ stages:
     name: lint
   - <<: *stage
     name: test
-  - <<: *stage
+  - &stage-bdd
+    name: precache-bdd
+  - <<: *stage-bdd
     name: bdd-tests
   - <<: *stage
     name: build
@@ -72,6 +74,19 @@ jobs:
           packages:
           - g++-4.8
 
+# precache npm and apt dependencies for bdd tests
+    - stage: precache-bdd
+      install: npm install > /dev/null
+      script: true
+      addons:
+        chrome: beta
+        apt:
+          sources:
+          - ubuntu-toolchain-r-test
+          # required by node-gyp to build some packages
+          packages:
+          - g++-4.8
+
 #   lint code
     - stage: lint
       install: true
@@ -103,7 +118,7 @@ jobs:
       - node  ./demo/dist/server.js &
       - sleep 3
       script:
-      - webdriver-manager update --standalone
+      - webdriver-manager update --standalone --versions.chrome
       - URL=$baseUrl npm run e2e-bdd
 
 #    test e2e-bdd for angular 4
@@ -117,7 +132,7 @@ jobs:
       - ng serve &
       - sleep 5
       script:
-      - webdriver-manager update --standalone
+      - webdriver-manager update --standalone --versions.chrome
       - URL=$baseUrl npm run e2e-bdd
 
 #    test e2e-bdd for angular 5
@@ -132,7 +147,7 @@ jobs:
       - ng serve --port=4201 &
       - sleep 5
       script:
-      - webdriver-manager update --standalone
+      - webdriver-manager update --standalone --versions.chrome
       - URL=$baseUrl npm run e2e-bdd
 
 #    check prod build
