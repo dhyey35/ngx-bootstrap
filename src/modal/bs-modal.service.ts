@@ -27,17 +27,17 @@ export class BsModalService {
   onHide: EventEmitter<any> = new EventEmitter();
   onHidden: EventEmitter<any> = new EventEmitter();
 
+  modalsCount = 0;
+  lastDismissReason = '';
+
+  loaders: ComponentLoader<ModalContainerComponent>[] = [];
   protected isBodyOverflowing = false;
+
   protected originalBodyPadding = 0;
 
   protected scrollbarWidth = 0;
-
   protected backdropRef: ComponentRef<ModalBackdropComponent>;
   private _backdropLoader: ComponentLoader<ModalBackdropComponent>;
-  private modalsCount = 0;
-  private lastDismissReason = '';
-
-  private loaders: ComponentLoader<ModalContainerComponent>[] = [];
 
   private _renderer: Renderer2;
 
@@ -53,12 +53,25 @@ export class BsModalService {
   /** Shows a modal */
   show(content: string | TemplateRef<any> | any, config?: any): BsModalRef {
     this.modalsCount++;
-    this._createLoaders();
+    this.loaders.push(this._createLoaders());
     this.config = Object.assign({}, modalConfigDefaults, config);
     this._showBackdrop();
     this.lastDismissReason = null;
 
     return this._showModal(content);
+  }
+
+  createModalContainerRef(content?: string | TemplateRef<any> | any, config?: any): any {
+    const loader = this._createLoaders();
+    const localConfig = Object.assign({}, modalConfigDefaults, config);
+    const bsModalRef = new BsModalRef(loader, localConfig);
+    bsModalRef.modalService = this;
+    this.copyEvent(loader.onBeforeShow, bsModalRef.onShow);
+    this.copyEvent(loader.onShown, bsModalRef.onShown);
+    this.copyEvent(loader.onBeforeHide, bsModalRef.onHide);
+    this.copyEvent(loader.onHidden, bsModalRef.onHidden);
+
+    return bsModalRef;
   }
 
   hide(level: number) {
@@ -103,13 +116,13 @@ export class BsModalService {
 
   _showModal(content: any): BsModalRef {
     const modalLoader = this.loaders[this.loaders.length - 1];
-    const bsModalRef = new BsModalRef();
+    const bsModalRef = new BsModalRef(modalLoader, this.config);
     const modalContainerRef = modalLoader
       .provide({ provide: ModalOptions, useValue: this.config })
       .provide({ provide: BsModalRef, useValue: bsModalRef })
       .attach(ModalContainerComponent)
       .to('body')
-      .show({ content, isAnimated: this.config.animated });
+      .show({ content, isAnimated: this.config.animated, bsModalService: this });
     modalContainerRef.instance.level = this.getModalsCount();
     bsModalRef.hide = () => {
       modalContainerRef.instance.hide();
@@ -180,7 +193,7 @@ export class BsModalService {
     return scrollbarWidth;
   }
 
-  private _createLoaders(): void {
+  private _createLoaders(): ComponentLoader<ModalContainerComponent> {
     const loader = this.clf.createLoader<ModalContainerComponent>(
       null,
       null,
@@ -190,7 +203,8 @@ export class BsModalService {
     this.copyEvent(loader.onShown, this.onShown);
     this.copyEvent(loader.onBeforeHide, this.onHide);
     this.copyEvent(loader.onHidden, this.onHidden);
-    this.loaders.push(loader);
+
+    return loader;
   }
 
   private removeLoaders(level: number): void {

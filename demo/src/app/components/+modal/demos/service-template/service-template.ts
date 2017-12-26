@@ -8,9 +8,21 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 })
 export class DemoModalServiceStaticComponent {
   modalRef: BsModalRef;
+  prebuiltModal: any;
   constructor(private modalService: BsModalService) {}
 
   openModal(template: TemplateRef<any>) {
     this.modalRef = this.modalService.show(template);
+    console.log(this.modalRef);
+  }
+
+  prebuild(template: TemplateRef<any>) {
+    this.prebuiltModal = this.modalService.createModalContainerRef(template);
+    console.log(this.prebuiltModal);
+    ['onShow', 'onShown', 'onHide', 'onHidden'].forEach((e: string) => {
+      this.prebuiltModal[e].subscribe((item: any) => {
+        console.log(e, item);
+      });
+    });
   }
 }

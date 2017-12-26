@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, TemplateRef } from '@angular/core';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 
@@ -8,6 +8,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 })
 export class DemoModalServiceFromComponent {
   bsModalRef: BsModalRef;
+  prebuiltModal: BsModalRef;
   constructor(private modalService: BsModalService) {}
 
   openModalWithComponent() {
@@ -20,6 +21,29 @@ export class DemoModalServiceFromComponent {
     this.bsModalRef = this.modalService.show(ModalContentComponent);
     this.bsModalRef.content.title = 'Modal with component';
     this.bsModalRef.content.list = list;
+    setTimeout(() => {
+      list.push('PROFIT!!!');
+    }, 2000);
+  }
+  prebuild(template: TemplateRef<any>) {
+    this.prebuiltModal = this.modalService.createModalContainerRef();
+    console.log(this.prebuiltModal);
+    ['onShow', 'onShown', 'onHide', 'onHidden'].forEach((e: string) => {
+      this.prebuiltModal[e].subscribe((item: any) => {
+        console.log(e, item);
+      });
+    });
+  }
+  showPrebuiltModal() {
+    const list = [
+      'Open a modal with component',
+      'Pass your data',
+      'Do something else',
+      '...'
+    ];
+    this.prebuiltModal.show(ModalContentComponent);
+    this.prebuiltModal.content.title = 'Modal with component';
+    this.prebuiltModal.content.list = list;
     setTimeout(() => {
       list.push('PROFIT!!!');
     }, 2000);
